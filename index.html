@@ -1,77 +1,57 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VSBM Sphere</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        canvas { display: block; }
+        body { margin: 0; background: #000; overflow: hidden; }
+        canvas { display: block; width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
-    <canvas id="sphereCanvas"></canvas>
+    <canvas id="c"></canvas>
     <script>
-        const canvas = document.getElementById('sphereCanvas');
+        const canvas = document.getElementById('c');
         const ctx = canvas.getContext('2d');
-        let width, height;
-        const particles = [];
-        const particleCount = 20000; 
+        let w, h;
+        const dots = [];
+        const count = 3000; // 降低數量，保證不黑屏
 
-        window.onload = () => {
-            resize();
-            initParticles();
-            animate();
-            const params = new URLSearchParams(window.location.search);
-            const data = params.get('data');
-            if (data) {
-                try {
-                    const decoded = decodeURIComponent(escape(atob(data)));
-                    setTimeout(() => { alert("收到訊息：" + decoded); }, 1000);
-                } catch (e) {}
-            }
-        };
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-
-        window.addEventListener('resize', resize);
-
-        function initParticles() {
-            for (let i = 0; i < particleCount; i++) {
-                const phi = Math.acos(-1 + (2 * i) / particleCount);
-                const theta = Math.sqrt(particleCount * Math.PI) * phi;
-                particles.push({
-                    phi: phi,
-                    theta: theta,
-                    color: hsl(${Math.random() * 360}, 100%, 70%)
-                });
+        function init() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+            for (let i = 0; i < count; i++) {
+                const phi = Math.acos(-1 + (2 * i) / count);
+                const theta = Math.sqrt(count * Math.PI) * phi;
+                dots.push({ phi, theta, color: hsl(${i % 360}, 100%, 70%) });
             }
         }
 
-        let rotation = 0;
-        function animate() {
+        let rot = 0;
+        function draw() {
             ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, width, height);
-            rotation += 0.01;
-            const radius = Math.min(width, height) * 0.4;
-            for (let i = 0; i < particleCount; i++) {
-                const p = particles[i];
-                let x = Math.cos(p.theta + rotation) * Math.sin(p.phi);
-                let y = Math.sin(p.theta + rotation) * Math.sin(p.phi);
-                let z = Math.cos(p.phi);
-                const tempY = y * Math.cos(rotation * 0.5) - z * Math.sin(rotation * 0.5);
-                const tempZ = y * Math.sin(rotation * 0.5) + z * Math.cos(rotation * 0.5);
-                const perspective = 600 / (600 + tempZ * radius);
-                const screenX = width / 2 + x * radius * perspective;
-                const screenY = height / 2 + tempY * radius * perspective;
-                ctx.fillStyle = p.color;
-                ctx.fillRect(screenX, screenY, 2 * perspective, 2 * perspective);
+            ctx.fillRect(0, 0, w, h);
+            rot += 0.01;
+            const r = Math.min(w, h) * 0.35;
+
+            for (let i = 0; i < count; i++) {
+                const d = dots[i];
+                let x = Math.cos(d.theta + rot) * Math.sin(d.phi);
+                let y = Math.sin(d.theta + rot) * Math.sin(d.phi);
+                let z = Math.cos(d.phi);
+
+                // 簡單 3D 投影
+                const sc = 400 / (400 + z * r);
+                const sx = w / 2 + x * r * sc;
+                const sy = h / 2 + y * r * sc;
+
+                ctx.fillStyle = d.color;
+                ctx.fillRect(sx, sy, 2, 2);
             }
-            requestAnimationFrame(animate);
+            requestAnimationFrame(draw);
         }
+
+        window.onload = () => { init(); draw(); };
     </script>
 </body>
 </html>
