@@ -5,104 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VSBM Sphere</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; }
+        body { margin: 0; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
         canvas { display: block; }
     </style>
-    <script src="https://cdnjs.cloudflare.com"></script>
 </head>
 <body>
-    <script>
-        let scene, camera, renderer, points;
-        const particleCount = 100000; // 十萬個粒子，極限吃資源
+    <canvas id="sphereCanvas"></canvas>
 
-        window.onload = function() {
+    <script>
+        const canvas = document.getElementById('sphereCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        const particles = [];
+        const particleCount = 20000; // 兩萬個粒子（2D 下這數量非常吃資源）
+
+        // 參數偵測
+        window.onload = () => {
+            resize();
+            initParticles();
+            animate();
+
             const params = new URLSearchParams(window.location.search);
             const data = params.get('data');
-            
-            // 初始化 3D 球體
-            initSphere();
-
-            // 如果有加密內容，1.5 秒後彈出訊息
             if (data) {
                 try {
                     const decoded = decodeURIComponent(escape(atob(data)));
-                    if (decoded.startsWith('http')) {
-                        // 網址跳轉延遲 3 秒，讓對方先卡一下
-                        setTimeout(() => { window.location.href = decoded; }, 3000);
-                    } else {
-                        setTimeout(() => { alert(decoded); }, 1500);
-                    }
+                    setTimeout(() => { alert(decoded); }, 1000);
                 } catch (e) {}
             }
         };
 
-        function initSphere() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
-            camera.position.z = 600;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
 
-            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio); 
-            document.body.appendChild(renderer.domElement);
+        window.addEventListener('resize', resize);
 
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            const colors = new Float32Array(particleCount * 3);
-
-            // 建立球狀分佈的粒子
+        function initParticles() {
             for (let i = 0; i < particleCount; i++) {
+                // 使用球極座標分布
                 const phi = Math.acos(-1 + (2 * i) / particleCount);
                 const theta = Math.sqrt(particleCount * Math.PI) * phi;
-
-                positions[i * 3] = 300 * Math.cos(theta) * Math.sin(phi);
-                positions[i * 3 + 1] = 300 * Math.sin(theta) * Math.sin(phi);
-                positions[i * 3 + 2] = 300 * Math.cos(phi);
-
-                colors[i * 3] = Math.random();
-                colors[i * 3 + 1] = Math.random();
-                colors[i * 3 + 2] = Math.random();
+                particles.push({
+                    phi: phi,
+                    theta: theta,
+                    color: hsl(${Math.random() * 360}, 100%, 70%)
+                });
             }
-
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-            const material = new THREE.PointsMaterial({
-                size: 2,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.9
-            });
-
-            points = new THREE.Points(geometry, material);
-            scene.add(points);
-
-            animate();
         }
 
+        let rotation = 0;
         function animate() {
-            requestAnimationFrame(animate);
-            
-            // 球體旋轉
-            points.rotation.x += 0.005;
-            points.rotation.y += 0.01;
+            // 每一幀都填滿黑色背景
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, width, height);
 
-            // 粒子抖動（核心吃效能處）
-            const pos = points.geometry.attributes.position.array;
-            for (let i = 0; i < pos.length; i++) {
-                pos[i] += (Math.random() - 0.5) * 2;
+            rotation += 0.01;
+            const radius = Math.min(width, height) * 0.4;
+
+            // 核心：手寫 3D 投影到 2D（非常吃 CPU 運算）
+            for (let i = 0; i < particleCount; i++) {
+                const p = particles[i];
+                
+                // 3D 座標計算
+                let x = Math.cos(p.theta + rotation) * Math.sin(p.phi);
+                let y = Math.sin(p.theta + rotation) * Math.sin(p.phi);
+                let z = Math.cos(p.phi);
+
+                // 繞 X 軸旋轉增加動感
+                const tempY = y * Math.cos(rotation * 0.5) - z * Math.sin(rotation * 0.5);
+                const tempZ = y * Math.sin(rotation * 0.5) + z * Math.cos(rotation * 0.5);
+                
+                // 投影到螢幕座標
+                const perspective = 600 / (600 + tempZ * radius);
+                const screenX = width / 2 + x * radius * perspective;
+                const screenY = height / 2 + tempY * radius * perspective;
+
+                // 繪製粒子
+                ctx.fillStyle = p.color;
+                // 加入隨機震動（增加負載）
+                const shake = (Math.random() - 0.5) * 2;
+                ctx.fillRect(screenX + shake, screenY + shake, 2 * perspective, 2 * perspective);
             }
-            points.geometry.attributes.position.needsUpdate = true;
 
-            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
         }
-
-        // 視窗大小調整自動適應
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
