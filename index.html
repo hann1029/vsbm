@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSBM 產生與解碼器</title>
+    <style>
+        body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f4f4f9; margin: 0; padding: 20px; box-sizing: border-box; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-bottom: 10px; font-weight: bold; }
+        button:hover { background: #218838; }
+        #output { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; word-break: break-all; font-family: monospace; color: #333; display: none; border: 1px dashed #28a745; cursor: pointer; }
+        .info { font-size: 14px; color: #666; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="title">VSBM 連結產生器</h2>
+        <p id="desc">輸入網址或悄悄話：</p>
+        <input type="text" id="userInput" placeholder="例如：https://google.com">
+        <button onclick="createLink()">生成分享連結</button>
+        <div id="output" title="點擊可複製連結" onclick="copyToClipboard()"></div>
+        <p class="info" id="status"></p>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedData = urlParams.get('data');
+            if (encodedData) {
+                try {
+                    const decoded = decodeURIComponent(escape(atob(encodedData)));
+                    document.getElementById('title').innerText = "收到 VSBM 內容";
+                    document.getElementById('desc').innerText = "自動解碼後的內容：";
+                    document.getElementById('userInput').value = decoded;
+                    document.getElementById('status').innerText = "✨ 已自動解碼！";
+                } catch (e) {
+                    alert("無效的內容！");
+                }
+            }
+        };
+
+        function createLink() {
+            const val = document.getElementById('userInput').value;
+            if (!val) return alert("請輸入內容！");
+            const encoded = btoa(unescape(encodeURIComponent(val)));
+            const shareUrl = window.location.origin + window.location.pathname + "?data=" + encoded;
+            const display = document.getElementById('output');
+            display.innerText = shareUrl;
+            display.style.display = "block";
+            document.getElementById('status').innerText = "✅ 連結已生成！點擊上方框框可複製";
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('output').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("連結已複製到剪貼簿！");
+            });
+        }
+    </script>
+</body>
+</html>
