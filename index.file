@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSBM Sphere</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="sphereCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('sphereCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        const particles = [];
+        const particleCount = 20000; 
+
+        window.onload = () => {
+            resize();
+            initParticles();
+            animate();
+            const params = new URLSearchParams(window.location.search);
+            const data = params.get('data');
+            if (data) {
+                try {
+                    const decoded = decodeURIComponent(escape(atob(data)));
+                    setTimeout(() => { alert("收到訊息：" + decoded); }, 1000);
+                } catch (e) {}
+            }
+        };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+
+        function initParticles() {
+            for (let i = 0; i < particleCount; i++) {
+                const phi = Math.acos(-1 + (2 * i) / particleCount);
+                const theta = Math.sqrt(particleCount * Math.PI) * phi;
+                particles.push({
+                    phi: phi,
+                    theta: theta,
+                    color: hsl(${Math.random() * 360}, 100%, 70%)
+                });
+            }
+        }
+
+        let rotation = 0;
+        function animate() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, width, height);
+            rotation += 0.01;
+            const radius = Math.min(width, height) * 0.4;
+            for (let i = 0; i < particleCount; i++) {
+                const p = particles[i];
+                let x = Math.cos(p.theta + rotation) * Math.sin(p.phi);
+                let y = Math.sin(p.theta + rotation) * Math.sin(p.phi);
+                let z = Math.cos(p.phi);
+                const tempY = y * Math.cos(rotation * 0.5) - z * Math.sin(rotation * 0.5);
+                const tempZ = y * Math.sin(rotation * 0.5) + z * Math.cos(rotation * 0.5);
+                const perspective = 600 / (600 + tempZ * radius);
+                const screenX = width / 2 + x * radius * perspective;
+                const screenY = height / 2 + tempY * radius * perspective;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(screenX, screenY, 2 * perspective, 2 * perspective);
+            }
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>
