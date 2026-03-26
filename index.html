@@ -3,59 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VSBM 產生與解碼器</title>
+    <title>VSBM</title>
     <style>
-        body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f4f4f9; margin: 0; padding: 20px; box-sizing: border-box; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-bottom: 10px; font-weight: bold; }
-        button:hover { background: #218838; }
-        #output { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; word-break: break-all; font-family: monospace; color: #333; display: none; border: 1px dashed #28a745; cursor: pointer; }
-        .info { font-size: 14px; color: #666; margin-top: 10px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fff; color: #333; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .container { width: 90%; max-width: 500px; text-align: center; }
+        h1 { font-size: 24px; font-weight: 400; margin-bottom: 30px; letter-spacing: 1px; }
+        input { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 16px; margin-bottom: 20px; outline: none; }
+        input:focus { border-color: #000; }
+        button { width: 100%; padding: 15px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        button:hover { background: #333; }
+        #result { margin-top: 30px; padding: 15px; background: #f9f9f9; border: 1px solid #eee; word-break: break-all; display: none; cursor: pointer; font-size: 14px; color: #666; }
+        .footer { margin-top: 40px; font-size: 12px; color: #ccc; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2 id="title">VSBM 連結產生器</h2>
-        <p id="desc">輸入網址或悄悄話：</p>
-        <input type="text" id="userInput" placeholder="例如：https://google.com">
-        <button onclick="createLink()">生成分享連結</button>
-        <div id="output" title="點擊可複製連結" onclick="copyToClipboard()"></div>
-        <p class="info" id="status"></p>
+    <div class="container">
+        <h1>VSBM</h1>
+        <input type="text" id="input" placeholder="输入內容或網址">
+        <button onclick="generate()">生成連結</button>
+        <div id="result" onclick="copy()"></div>
+        <div class="footer">點擊生成的連結即可複製</div>
     </div>
 
     <script>
+        // 核心邏輯：進入網頁時自動處理
         window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const encodedData = urlParams.get('data');
-            if (encodedData) {
+            const params = new URLSearchParams(window.location.search);
+            const data = params.get('data');
+            if (data) {
                 try {
-                    const decoded = decodeURIComponent(escape(atob(encodedData)));
-                    document.getElementById('title').innerText = "收到 VSBM 內容";
-                    document.getElementById('desc').innerText = "自動解碼後的內容：";
-                    document.getElementById('userInput').value = decoded;
-                    document.getElementById('status').innerText = "✨ 已自動解碼！";
+                    const decoded = decodeURIComponent(escape(atob(data)));
+                    // 如果是網址，直接跳轉 (cznull 的核心功能)
+                    if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+                        window.location.href = decoded;
+                    } else {
+                        // 如果不是網址，顯示在輸入框並提示
+                        document.getElementById('input').value = decoded;
+                        alert("收到悄悄話：" + decoded);
+                    }
                 } catch (e) {
-                    alert("無效的內容！");
+                    console.error("解碼失敗");
                 }
             }
         };
 
-        function createLink() {
-            const val = document.getElementById('userInput').value;
-            if (!val) return alert("請輸入內容！");
+        function generate() {
+            const val = document.getElementById('input').value;
+            if (!val) return;
             const encoded = btoa(unescape(encodeURIComponent(val)));
-            const shareUrl = window.location.origin + window.location.pathname + "?data=" + encoded;
-            const display = document.getElementById('output');
-            display.innerText = shareUrl;
-            display.style.display = "block";
-            document.getElementById('status').innerText = "✅ 連結已生成！點擊上方框框可複製";
+            const url = window.location.origin + window.location.pathname + "?data=" + encoded;
+            const resDiv = document.getElementById('result');
+            resDiv.innerText = url;
+            resDiv.style.display = "block";
         }
 
-        function copyToClipboard() {
-            const text = document.getElementById('output').innerText;
+        function copy() {
+            const text = document.getElementById('result').innerText;
             navigator.clipboard.writeText(text).then(() => {
-                alert("連結已複製到剪貼簿！");
+                alert("已複製到剪貼簿");
             });
         }
     </script>
